@@ -1,10 +1,17 @@
+import { useMovieContext } from '../contexts/MovieContext';
 import '../css/MovieCard.css';
 import type { Movie } from '../services/api';
+import type { MouseEvent } from 'react';
 
 function MovieCard({ movie }: { movie: Movie }) {
 
-    function onFavoriteClick() {
-        alert("clicked");
+    const {isFavorite, addToFavorites, removeFromFavorites} = useMovieContext();
+    const favorite = isFavorite(movie.id);
+
+    function onFavoriteClick(e: MouseEvent<HTMLButtonElement>) {
+        e.preventDefault();
+        if (favorite) removeFromFavorites(movie.id);
+        else addToFavorites(movie);
     }
 
     return (
@@ -12,7 +19,7 @@ function MovieCard({ movie }: { movie: Movie }) {
             <div className="movie-poster">
                 <img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title} />
                 <div className="movie-overlay">
-                    <button className="favorite-btn" onClick={onFavoriteClick}>
+                    <button className={`favorite-btn ${favorite ? "active" : ""}`} onClick={onFavoriteClick}>
                         ❤
                     </button>
                 </div>

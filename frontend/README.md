@@ -1,75 +1,92 @@
-# React + TypeScript + Vite
+# Movie App (react-demo)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A single-page React app for browsing popular movies and searching The Movie Database (TMDB), with a serverless API proxy.
 
-Currently, two official plugins are available:
+## Tech stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+| Library | Version |
+| --- | --- |
+| React | 19.2.7 |
+| React DOM | 19.2.7 |
+| TypeScript | ~6.0.2 |
+| Vite | ^8.1.1 |
+| react-router-dom | ^7.18.1 |
+| ESLint | ^10.6.0 |
 
-## React Compiler
+See [package.json](package.json) for the full dependency list.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Project layout
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+This app lives in `frontend/`, alongside a sibling `../api/` folder at the repo root:
 
 ```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+react-demo/
+  frontend/            <- you are here
+    public/
+      staticwebapp.config.json   # Azure SPA fallback routing + API runtime config
+    src/
+      components/
+        navbar.tsx      # top nav (Home / Favorites links)
+        MovieCard.tsx   # poster, title, release year for one movie
+      pages/
+        Home.tsx        # popular movies grid + search
+        Favorites.tsx   # saved favorites list
+      contexts/
+        MovieContext.tsx  # favorites state (work in progress)
+      services/
+        api.ts          # calls the /api/movies/* proxy (see api/ below), typed Movie interface
+      css/               # one stylesheet per component/page
+      App.tsx            # route definitions
+      main.tsx           # app entry point (BrowserRouter + StrictMode)
+  api/                  <- sibling folder, NOT inside frontend/
+    movies-popular/      # Azure Function: GET /api/movies/popular
+    movies-search/       # Azure Function: GET /api/movies/search?q=
+    host.json / package.json
+  .github/workflows/     # GitHub Actions CI/CD (Azure Static Web Apps)
 ```
+
+The frontend never talks to TMDB directly. `src/services/api.ts` calls relative `/api/movies/popular` and `/api/movies/search` routes, which are served by the Azure Functions in `../api/` (proxied automatically in production by Azure Static Web Apps, and via a local dev proxy — see below). The TMDB API key only ever lives server-side, as an environment variable read by those functions.
+
+## Running locally
+
+You need two terminals — one for the API, one for the frontend.
+
+**Prerequisites (one-time):**
+- [Azure Functions Core Tools v4](https://learn.microsoft.com/azure/azure-functions/functions-run-local) — `npm install -g azure-functions-core-tools@4 --unsafe-perm true`
+- A `../api/local.settings.json` file (gitignored, not committed) with your TMDB key:
+  ```json
+  {
+    "IsEncrypted": false,
+    "Values": {
+      "FUNCTIONS_WORKER_RUNTIME": "node",
+      "TMDB_API_KEY": "<your TMDB key>"
+    }
+  }
+  ```
+
+**Terminal 1 — API:**
+```bash
+cd api
+func start          # serves the Functions app on http://localhost:7071
+```
+
+**Terminal 2 — frontend:**
+```bash
+cd frontend
+npm install
+npm run dev         # serves Vite on http://localhost:5173, proxying /api/* to :7071
+```
+
+Open [http://localhost:5173](http://localhost:5173).
+
+## Other commands
+
+```bash
+npm run build     # tsc -b && vite build -> outputs to dist/
+npm run preview   # preview the production build locally
+npm run lint      # eslint .
+```
+
+## Deployment
+
+Pushes to `main` deploy automatically via GitHub Actions to Azure Static Web Apps (Free tier) — see `.github/workflows/`. The frontend (`frontend/dist`) and the API (`api/`) are built and deployed together; the TMDB key is stored as an Azure Static Web Apps Application Setting, never in source control.
