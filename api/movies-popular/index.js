@@ -1,16 +1,21 @@
 const BASE_URL = "https://api.themoviedb.org/3";
 
 module.exports = async function (context, req) {
-  const apiKey = process.env.TMDB_API_KEY;
-  if (!apiKey) {
-    context.res = { status: 500, jsonBody: { error: "Server misconfiguration" } };
-    return;
+  try {
+    const apiKey = process.env.TMDB_API_KEY;
+    if (!apiKey) {
+      context.res = { status: 500, jsonBody: { error: "Server misconfiguration" } };
+      return;
+    }
+    const response = await fetch(`${BASE_URL}/movie/popular?api_key=${apiKey}`);
+    if (!response.ok) {
+      context.res = { status: response.status, jsonBody: { error: "Upstream TMDB error" } };
+      return;
+    }
+    const data = await response.json();
+    context.res = { jsonBody: data.results };
+  } catch (err) {
+    context.log.error(err);
+    context.res = { status: 500, jsonBody: { error: "Internal server error" } };
   }
-  const response = await fetch(`${BASE_URL}/movie/popular?api_key=${apiKey}`);
-  if (!response.ok) {
-    context.res = { status: response.status, jsonBody: { error: "Upstream TMDB error" } };
-    return;
-  }
-  const data = await response.json();
-  context.res = { jsonBody: data.results };
 };
