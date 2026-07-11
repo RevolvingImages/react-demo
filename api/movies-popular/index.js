@@ -4,18 +4,18 @@ module.exports = async function (context, req) {
   try {
     const apiKey = process.env.TMDB_API_KEY;
     if (!apiKey) {
-      context.res = { status: 500, jsonBody: { error: "Server misconfiguration" } };
+      context.res = { status: 500, body: { error: "Server misconfiguration" } };
       return;
     }
     const response = await fetch(`${BASE_URL}/movie/popular?api_key=${apiKey}`);
     if (!response.ok) {
-      context.res = { status: response.status, jsonBody: { error: "Upstream TMDB error" } };
+      context.res = { status: response.status, body: { error: "Upstream TMDB error" } };
       return;
     }
     const data = await response.json();
-    context.res = { jsonBody: data.results };
+    context.res = { body: data.results };
   } catch (err) {
     context.log.error(err);
-    context.res = { status: 500, jsonBody: { error: "Internal server error" } };
+    context.res = { status: 500, body: { error: "Internal server error" } };
   }
 };
