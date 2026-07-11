@@ -24,7 +24,7 @@
 .favorites-empty h2 {
   margin-bottom: 1rem;
   font-size: 2rem;
-  color: #e50914;
+  color: var(--color-accent);
 }
 
 .favorites-empty p {
