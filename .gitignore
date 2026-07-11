@@ -1,0 +1,3 @@
+# Azure Functions local settings (contains secrets, never commit)
+api/local.settings.json
+api/node_modules
